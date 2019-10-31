@@ -453,4 +453,4 @@ api.add_resource(ScentRoomTrigger, '/scentroom-trigger') # POST
 
 if __name__ == '__main__':
     settings_json = settings.get_settings()
-    app.run(debug=settings_json["debug"], port=80, host='0.0.0.0')
+    app.run(debug=settings_json["debug"], port=os.environ.get("PORT", "80"), host='0.0.0.0')
