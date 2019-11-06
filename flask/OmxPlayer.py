@@ -48,7 +48,7 @@ class OmxPlayer():
 
         if output_route == 'hdmi':
             normalised_output_route = 'hdmi'
-            omxArgs += ['--layout', '5.1']
+            omxArgs += ['-w', '--layout', '5.1']
         elif output_route == 'jack': 
             normalised_output_route = 'local'
 
@@ -182,7 +182,6 @@ class OmxPlayer():
             self.player.quit()
             self.__del__()
             killOmx()
-            self.__del__()
         else:
             return 1
 
