@@ -416,6 +416,9 @@ class ScentRoomTrigger(Resource):
                     player.stop()
                     player.exit()
                     try:
+                        # RGB value for warm white for both RGBW downlight and side RGB lights
+                        # The eighth channel of 255 is needed for whatever reason, I don't have time
+                        # to find out why right now
                         if player.lighting:
                             player.lighting.dmx.write_frame([0, 0, 0, 255, 255, 241, 198, 255])
                     except Exception as e:
