@@ -93,43 +93,43 @@ class LushRoomsLighting():
 
     def initDMX(self):
         # configure Tinkerforge DMX
-        # try:
-        self.ipcon.connect(HOST, PORT)
+        try:
+            self.ipcon.connect(HOST, PORT)
 
-        # Register Enumerate Callback
-        self.ipcon.register_callback(IPConnection.CALLBACK_ENUMERATE, self.cb_enumerate)
+            # Register Enumerate Callback
+            self.ipcon.register_callback(IPConnection.CALLBACK_ENUMERATE, self.cb_enumerate)
 
-        # Trigger Enumerate
-        self.ipcon.enumerate()
+            # Trigger Enumerate
+            self.ipcon.enumerate()
 
-        # Likely wait for the tinkerforge brickd to finish doing its thing
-        sleep(0.7)
+            # Likely wait for the tinkerforge brickd to finish doing its thing
+            sleep(0.7)
 
-        if DEBUG:
-            print("Tinkerforge enumerated IDs", self.tfIDs)
+            if DEBUG:
+                print("Tinkerforge enumerated IDs", self.tfIDs)
 
-        dmxcount = 0
-        for tf in self.tfIDs:
-            if len(tf[0])<=3: # if the device UID is 3 characters it is a bricklet
-                if tf[1] in self.deviceIDs:
-                    if VERBOSE:
-                        print(tf[0],tf[1], self.getIdentifier(tf))
-                if tf[1] == 285: # DMX Bricklet
-                    if dmxcount == 0:
-                        print("Registering %s as slave DMX device for playing DMX frames" % tf[0])
-                        self.dmx = BrickletDMX(tf[0], self.ipcon)
-                        self.dmx.set_dmx_mode(self.dmx.DMX_MODE_MASTER)
-                        self.dmx.set_frame_duration(DMX_FRAME_DURATION)
-                        
-                    dmxcount += 1
+            dmxcount = 0
+            for tf in self.tfIDs:
+                if len(tf[0])<=3: # if the device UID is 3 characters it is a bricklet
+                    if tf[1] in self.deviceIDs:
+                        if VERBOSE:
+                            print(tf[0],tf[1], self.getIdentifier(tf))
+                    if tf[1] == 285: # DMX Bricklet
+                        if dmxcount == 0:
+                            print("Registering %s as slave DMX device for playing DMX frames" % tf[0])
+                            self.dmx = BrickletDMX(tf[0], self.ipcon)
+                            self.dmx.set_dmx_mode(self.dmx.DMX_MODE_MASTER)
+                            self.dmx.set_frame_duration(DMX_FRAME_DURATION)
+                            
+                        dmxcount += 1
 
-        if dmxcount < 1:
-            if LIGHTING_MSGS:
-                print("No DMX devices found.")
-        # except Exception as e:
-        #     print("Could not create connection to Tinkerforge DMX. DMX lighting is now disabled")
-        #     print("Error: ", e)
-        #     PLAY_DMX = False
+            if dmxcount < 1:
+                if LIGHTING_MSGS:
+                    print("No DMX devices found.")
+        except Exception as e:
+            print("Could not create connection to Tinkerforge DMX. DMX lighting is now disabled")
+            print("Why: ", e)
+            PLAY_DMX = False
 
     def resetDMX(self):
         dmxcount = 0
