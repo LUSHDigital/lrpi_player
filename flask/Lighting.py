@@ -102,7 +102,7 @@ class LushRoomsLighting():
             self.ipcon.enumerate()
 
             # Likely wait for the tinkerforge brickd to finish doing its thing
-            sleep(0.5)
+            sleep(0.7)
 
             if DEBUG:
                 print("Tinkerforge enumerated IDs", self.tfIDs)
@@ -493,13 +493,14 @@ class LushRoomsLighting():
             self.triggerPreviousEvent(0)
             # start lighting scheduler
             self.last_played = 0
-            #if self.scheduler !
-            self.scheduler = BackgroundScheduler({
-            'apscheduler.executors.processpool': {
-                'type': 'processpool',
-                'max_workers': '10'
-            }})
-            if len(self.subs > 1) :
+            
+
+            if len(self.subs) > 1 :
+                self.scheduler = BackgroundScheduler({
+                'apscheduler.executors.processpool': {
+                    'type': 'processpool',
+                    'max_workers': '10'
+                }})
                 self.scheduler.add_job(self.tick, 'interval', seconds=TICK_TIME, misfire_grace_time=None, max_instances=16, coalesce=True)
                 # This could be the cause of the _very_ first event, after a cold boot, not triggering correctly:
                 self.scheduler.start(paused=False)
@@ -572,6 +573,8 @@ class LushRoomsLighting():
 
     def __del__(self):
         try:
+            self.dmx = None
+            self.ipcon = None
             if self.scheduler:
                 self.scheduler.shutdown()
         except Exception as e:
