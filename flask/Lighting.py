@@ -14,6 +14,7 @@ import os
 import json
 import settings
 import find_hue
+import logging
 from DmxInterpolator import DmxInterpolator 
 
 # dev
@@ -92,43 +93,43 @@ class LushRoomsLighting():
 
     def initDMX(self):
         # configure Tinkerforge DMX
-        try:
-            self.ipcon.connect(HOST, PORT)
+        # try:
+        self.ipcon.connect(HOST, PORT)
 
-            # Register Enumerate Callback
-            self.ipcon.register_callback(IPConnection.CALLBACK_ENUMERATE, self.cb_enumerate)
+        # Register Enumerate Callback
+        self.ipcon.register_callback(IPConnection.CALLBACK_ENUMERATE, self.cb_enumerate)
 
-            # Trigger Enumerate
-            self.ipcon.enumerate()
+        # Trigger Enumerate
+        self.ipcon.enumerate()
 
-            # Likely wait for the tinkerforge brickd to finish doing its thing
-            sleep(0.7)
+        # Likely wait for the tinkerforge brickd to finish doing its thing
+        sleep(0.7)
 
-            if DEBUG:
-                print("Tinkerforge enumerated IDs", self.tfIDs)
+        if DEBUG:
+            print("Tinkerforge enumerated IDs", self.tfIDs)
 
-            dmxcount = 0
-            for tf in self.tfIDs:
-                if len(tf[0])<=3: # if the device UID is 3 characters it is a bricklet
-                    if tf[1] in self.deviceIDs:
-                        if VERBOSE:
-                            print(tf[0],tf[1], self.getIdentifier(tf))
-                    if tf[1] == 285: # DMX Bricklet
-                        if dmxcount == 0:
-                            print("Registering %s as slave DMX device for playing DMX frames" % tf[0])
-                            self.dmx = BrickletDMX(tf[0], self.ipcon)
-                            self.dmx.set_dmx_mode(self.dmx.DMX_MODE_MASTER)
-                            self.dmx.set_frame_duration(DMX_FRAME_DURATION)
-                            
-                        dmxcount += 1
+        dmxcount = 0
+        for tf in self.tfIDs:
+            if len(tf[0])<=3: # if the device UID is 3 characters it is a bricklet
+                if tf[1] in self.deviceIDs:
+                    if VERBOSE:
+                        print(tf[0],tf[1], self.getIdentifier(tf))
+                if tf[1] == 285: # DMX Bricklet
+                    if dmxcount == 0:
+                        print("Registering %s as slave DMX device for playing DMX frames" % tf[0])
+                        self.dmx = BrickletDMX(tf[0], self.ipcon)
+                        self.dmx.set_dmx_mode(self.dmx.DMX_MODE_MASTER)
+                        self.dmx.set_frame_duration(DMX_FRAME_DURATION)
+                        
+                    dmxcount += 1
 
-            if dmxcount < 1:
-                if LIGHTING_MSGS:
-                    print("No DMX devices found.")
-        except Exception as e:
-            print("Could not create connection to Tinkerforge DMX. DMX lighting is now disabled")
-            print("Error: ", e)
-            PLAY_DMX = False
+        if dmxcount < 1:
+            if LIGHTING_MSGS:
+                print("No DMX devices found.")
+        # except Exception as e:
+        #     print("Could not create connection to Tinkerforge DMX. DMX lighting is now disabled")
+        #     print("Error: ", e)
+        #     PLAY_DMX = False
 
     def resetDMX(self):
         dmxcount = 0
@@ -484,18 +485,21 @@ class LushRoomsLighting():
         self.player = audioPlayer
         self.subs = subs
         self.dmx_interpolator.__init__()
+        subs_length = len(self.subs)
         if subs is not None: 
             if LIGHTING_MSGS:
                 print("Lighting: Start!")
                 print('AudioPlayer: ', self.player)
-                print("Number of lighting events",len(self.subs))
+                print("Number of lighting events: ", subs_length)
             # Trigger the first lighting event before the scheduler event starts
             self.triggerPreviousEvent(0)
-            # start lighting scheduler
             self.last_played = 0
-            
 
-            if len(self.subs) > 1 :
+            if subs_length == 1:
+                if LIGHTING_MSGS:
+                    print("There's only 1 lighting event, so no need to start the scheduler and unleash hell...")
+            elif subs_length > 1:
+                # start lighting scheduler
                 self.scheduler = BackgroundScheduler({
                 'apscheduler.executors.processpool': {
                     'type': 'processpool',
@@ -573,10 +577,15 @@ class LushRoomsLighting():
 
     def __del__(self):
         try:
+            print("ipcon: ", self.ipcon)
+            if self.scheduler:
+                logging.info("Shutting down scheduler...")
+                self.scheduler.shutdown()
+           
+            logging.info("Disconnecting from tinkerforge...")
+            self.ipcon.disconnect()
             self.dmx = None
             self.ipcon = None
-            if self.scheduler:
-                self.scheduler.shutdown()
         except Exception as e:
             print('Lighting destructor failed: ', e)
         if LIGHTING_MSGS:

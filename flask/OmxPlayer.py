@@ -198,5 +198,6 @@ class OmxPlayer():
     def __del__(self):
         if self.player:
             self.player.quit()
+        self.player = None
         killOmx()
         print("OMX died")
