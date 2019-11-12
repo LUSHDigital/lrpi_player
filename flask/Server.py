@@ -424,10 +424,10 @@ class ScentRoomTrigger(Resource):
                         logging.error("Could not kill lighting, things have gotten out of sync...")
                         logging.info("Killing everything anyway!")
                         print("Why: ", e)
+                        player.stop()
+                        player.exit()
                         player.__del__()
                         player = None
-                        print("*************************** Lighting sync exception found ***********************")
-                        exit(0)
                     player.stop()
                     player.exit()
                     player.__del__()
