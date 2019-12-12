@@ -177,7 +177,7 @@ class LushRoomsPlayer():
         if not self.isSlave():
             return self.start(path, subs, subsPath)
         else:
-            return 0 
+            return 0
 
 
     def seek(self, position):
