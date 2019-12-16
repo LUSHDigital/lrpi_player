@@ -202,7 +202,7 @@ class GetTrackList(Resource):
                 player = LushRoomsPlayer(NEW_TRACK_ARRAY, MEDIA_BASE_PATH)
                 player.resetLighting()
 
-            return jsonify(NEW_TRACK_ARRAY), 200
+            return jsonify(NEW_TRACK_ARRAY)
         except Exception as e:
             logging.error("Path building has probably failed. Sending error code and cleaning up...")
             logging.error(e)
