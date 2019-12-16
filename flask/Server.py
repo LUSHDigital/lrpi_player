@@ -242,7 +242,7 @@ class PlayPause(Resource):
 class FadeDown(Resource):
     def get(self):
         global player
-        global BUILT_PATH 
+        global BUILT_PATH
 
         args = getInput()
         print('argsid : ', args["id"])
