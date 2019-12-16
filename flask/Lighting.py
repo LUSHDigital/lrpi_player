@@ -117,7 +117,6 @@ class LushRoomsLighting():
                             self.dmx = BrickletDMX(tf[0], self.ipcon)
                             self.dmx.set_dmx_mode(self.dmx.DMX_MODE_MASTER)
                             self.dmx.set_frame_duration(DMX_FRAME_DURATION)
-                            
                         dmxcount += 1
 
             if dmxcount < 1:
@@ -210,7 +209,6 @@ class LushRoomsLighting():
                     bri = 50
                     sat = 100
                     hue = 0
-                    colormode = 'ct'
                     colortemp = 450
                     cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue), 'ct' : colortemp}
                     self.bridge.set_light(l.light_id,cmd)
@@ -288,6 +286,7 @@ class LushRoomsLighting():
                 pp = self.player.getPosition()
             except Exception as e:
                 print("Could not get the current position of the player, shutting down lighting gracefully...")
+                logging.error(e)
                 self.__del__()
 
 
@@ -533,6 +532,8 @@ class LushRoomsLighting():
             print("-------------")
 
     def exit(self):
+        self.resetDMX()
+        self.resetHUE()
         self.__del__()
 
     def triggerPreviousEvent(self, pos):
