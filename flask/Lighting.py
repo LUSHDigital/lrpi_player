@@ -144,7 +144,6 @@ class LushRoomsLighting():
             logging.error("Could not connect to DMX daemon to reset!")
 
     def initHUE(self):
-
         try:
             if self.PLAY_HUE:
                 HUE_IP_ADDRESS = find_hue.hue_ip()
@@ -153,52 +152,20 @@ class LushRoomsLighting():
                     print("HUE disabled in settings.json, HUE is now disabled")
                     self.PLAY_HUE = False
                     return
-                #global hue_list
-            #try:
-                # b = Bridge('lushroom-hue.local')
                 self.bridge = Bridge(HUE_IP_ADDRESS, config_file_path="/media/usb/python_hue")
                 # If the app is not registered and the button is not pressed, press the button and call connect() (this only needs to be run a single time)
                 self.bridge.connect()
                 # Get the bridge state (This returns the full dictionary that you can explore)
                 self.bridge.get_api()
+                self.resetHUE()
                 lights = self.bridge.lights
-                # lplay-85
-                # for l in lights:
-                #     # print(dir(l))
-                #     l.on = False
-                # sleep(1)
-                for l in lights:
-                    # print(dir(l))
-                    l.on = True
-                # Print light names
-                # Set brightness of each light to 100
-                for l in lights:
-                    if LIGHTING_MSGS:
-                        print(l.name)
-                    l.brightness = 255
-                for l in lights:
-                    ## print(l.name)
-                    l.brightness = 50
-                    ##l.colormode = 'ct'
-                    #l.colortemp_k = 2700
-                    #l.saturation = 0
-                    bri = 50
-                    sat = 100
-                    hue = 0
-                    colortemp = 450
-                    cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue), 'ct' : colortemp}
-                    self.bridge.set_light(l.light_id,cmd)
-
-
-                # Get a dictionary with the light name as the key
-                light_names = self.bridge.get_light_objects('name')
-                if LIGHTING_MSGS:
-                    print("Light names:", light_names)
                 self.hue_list = self.hue_build_lookup_table(lights)
+
                 if LIGHTING_MSGS:
+                    # Get a dictionary with the light name as the key
+                    light_names = self.bridge.get_light_objects('name')
+                    print("Light names:", light_names)
                     print(self.hue_list)
-            #except PhueRegistrationException:
-            #    print("Press the Philips Hue button to link the Hue Bridge to the LushRoom Pi.")
         except Exception as e:
             print("Could not create connection to Hue. Hue lighting is now disabled")
             print("Error: ", e)
@@ -206,17 +173,12 @@ class LushRoomsLighting():
 
     def resetHUE(self):
         if self.PLAY_HUE:
-            lights = self.bridge.lights
-            # for l in lights:
-            #     # print(dir(l))
-            #     l.on = False
-            # sleep(1)
-            for l in lights:
+            for l in self.bridge.lights:
                 # print(dir(l))
                 l.on = True
             # Print light names
             # Set brightness of each light to 100
-            for l in lights:
+            for l in self.bridge.lights:
                 if LIGHTING_MSGS:
                     print(l.name)
                 l.brightness = 50
