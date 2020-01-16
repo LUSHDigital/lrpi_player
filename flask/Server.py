@@ -135,47 +135,6 @@ def timing(f):
         return ret
     return wrap
 
-def idleLoop():
-    global player, paused, status, idle_lighting_player, tfipcon
-    print(time.time(), tfipcon, idle_lighting_player)
-    try:
-        if player != None:
-            status = player.getStatus()["playerState"]
-        else:
-            status = "Paused"
-    except:
-        status = "Paused"
-    if status == "Paused":
-        print("Playing idle loop", idle_lighting_player.startTime, idle_lighting_player.last_played, idle_lighting_player.job)
-        # idlePlay()
-        idle_lighting_player.startTime = time.perf_counter()
-        idle_lighting_player.last_played = 0
-        print(idle_lighting_player.startTime, idle_lighting_player.last_played, idle_lighting_player.job)
-        # idle_lighting_player.start(None, subs)
-        # idle_lighting_player.job.Job.resume()
-        # idle_lighting_player.scheduler.resume()
-    elif status == "Playing":
-        pass
-        # idle_lighting_player.playPause()
-        # idle_lighting_player.job.Job.pause()
-    print(status)
-
-def idlePlay():
-    global player, scheduler, tfipcon
-    if player == None:
-        player = LushRoomsPlayer(None, None, scheduler, tfipcon)
-    sleep(0.5)
-    mp3_filename = "/media/usb/uploads/idle.mp3"
-    srt_filename = os.path.splitext(mp3_filename)[0]+".srt"
-    player.start(mp3_filename, None, srt_filename)
-    # sleep(5.5)
-    # player.stop()
-    # player.exit()
-    # player.__del__()
-    # player = None
-    # killOmx()
-
-
 # serve the angular app
 
 @app.route('/', defaults={'path': ''})
@@ -487,15 +446,6 @@ class ScentRoomTrigger(Resource):
                         # matched white light RGB: 255, 241, 198, 255
                         if player.lighting.dmx:
                             player.lighting.dmx.write_frame([0, 0, 0, 255, 30, 30, 30, 0])
-                        # player.playPause()
-                        # player.stop()
-                        # player.exit()
-                        # player.__del__()
-                        # player = None
-                        # killOmx()
-                        # scheduler.print_jobs()
-                        # status = "Paused"
-                        # return jsonify({'response': 200, 'description': 'ok!'})
                     except Exception as e:
                         logging.error("Could not kill lighting, things have gotten out of sync...")
                         logging.info("Killing everything anyway!")
@@ -504,20 +454,12 @@ class ScentRoomTrigger(Resource):
                         player.exit()
                         player.__del__()
                         player = None
-                        # killOmx()
-                        # scheduler.print_jobs()
-                        # status = "Paused"
-                        # return jsonify({'response': 200, 'description': 'lighting out of sync'})
-                    # else:
+
                     player.stop()
                     player.exit()
                     player.__del__()
                     player = None
 
-                    # print("SR Trigger stop - restarting LushRoomsPlayer")
-                    # player = LushRoomsPlayer(None, None, scheduler, tfipcon)
-                    # if player.lighting.dmx:
-                    #     player.lighting.dmx.write_frame([0, 0, 0, 255, 30, 30, 30, 0])
                     scheduler.print_jobs()
                     status = "Paused"
 
@@ -528,52 +470,6 @@ class ScentRoomTrigger(Resource):
 
         else:
             return jsonify({'response': 500, 'description': 'not ok!', "error": "Incorrect body format"})
-
-class ScentRoomReboot(Resource):
-    def get(self):
-        global player, scheduler, tfipcon
-        try:
-            player = LushRoomsPlayer(None, None, scheduler, tfipcon)
-            sleep(1)
-            if player.lighting:
-                player.lighting.dmx.write_frame([0, 150, 0, 255, 0, 150, 0, 0])
-                sleep(0.2)
-                player.lighting.dmx.write_frame([0, 0, 0, 0, 0, 0, 0, 0])
-                sleep(0.2)
-                player.lighting.dmx.write_frame([0, 150, 0, 255, 0, 150, 0, 0])
-                sleep(0.2)
-                player.lighting.dmx.write_frame([0, 0, 0, 0, 0, 0, 0, 0])
-            player.stop()
-            player.exit()
-            player.__del__()
-            player = None
-            killOmx()
-            return jsonify({'response': 200, 'description': 'ok!'})
-        except Exception as e:
-            print("Reboot sequence failed: ", e)
-            return jsonify({'response': 500, 'description': 'not ok!'})
-
-class ScentRoomIdle(Resource):
-    def get(self):
-        global player, scheduler, tfipcon
-        try:
-            print("SR Trigger idle - restarting LushRoomsPlayer")
-            if player == None:
-                player = LushRoomsPlayer(None, None, scheduler, tfipcon)
-            sleep(0.5)
-            mp3_filename = "/media/usb/uploads/idle.mp3"
-            srt_filename = os.path.splitext(mp3_filename)[0]+".srt"
-            player.start(mp3_filename, None, srt_filename)
-            sleep(5.5)
-            player.stop()
-            player.exit()
-            player.__del__()
-            player = None
-            killOmx()
-            return jsonify({'response': 200, 'description': 'ok!'})
-        except Exception as e:
-            print("Idle sequence failed: ", e)
-            return jsonify({'response': 500, 'description': 'not ok!'})
 
 # URLs are defined here
 
@@ -596,20 +492,9 @@ api.add_resource(Command, '/command') # POST
 # Scentroom specific endpoints
 api.add_resource(ScentRoomTrigger, '/scentroom-trigger') # POST
 api.add_resource(ScentRoomReboot, '/scentroom-reboot') # GET
-api.add_resource(ScentRoomIdle, '/scentroom-idle') # GET
 
 if __name__ == '__main__':
     tfipcon.connect(HOST, PORT)
     settings_json = settings.get_settings()
-    if settings_json['activate_idle_loop'] == "true":
-        scheduler.add_job(idleLoop, 'interval', seconds=8, misfire_grace_time=None, max_instances=1, coalesce=False)
 
-    idle_lighting_player = LushRoomsLighting(scheduler, tfipcon)
-    srtFilename = "/media/usb/uploads/idle.srt"
-    subs = srtopen(srtFilename)
-    idle_lighting_player.start(None, subs)
-
-    sleep(8)
-
-    # app.run(use_reloader=False, debug=settings_json["debug"], port=os.environ.get("PORT", "80"), host='0.0.0.0')
-    app.run(use_reloader=False, debug="true", port=os.environ.get("PORT", "80"), host='0.0.0.0')
+    app.run(use_reloader=False, debug=settings_json["debug"], port=os.environ.get("PORT", "80"), host='0.0.0.0')
