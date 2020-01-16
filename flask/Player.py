@@ -136,7 +136,7 @@ class LushRoomsPlayer():
                 print('Master, sending stop!')
                 syncTime = self.sendSlaveCommand('stop')
 
-            # self.lighting.exit()
+            self.lighting.exit()
             self.player.exit(syncTime)
 
             return 0
@@ -156,8 +156,8 @@ class LushRoomsPlayer():
 
     def resetLighting(self):
         if self.lighting:
-            self.lighting.resetHUE()
             self.lighting.resetDMX()
+            self.lighting.resetHUE()
 
     def fadeDown(self, path, interval, subs, subsPath, syncTimestamp=None):
 

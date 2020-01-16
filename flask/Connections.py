@@ -2,6 +2,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from tinkerforge.ip_connection import IPConnection # pylint: disable=import-error
 from time import sleep
 import os
+import logging
+logging.basicConfig(level=logging.INFO)
 
 # brickd
 HOST = os.environ.get("BRICKD_HOST", "127.0.0.1")
@@ -33,4 +35,20 @@ class Connections():
     def cb_enumerate(self, uid, connected_uid, position, hardware_version, firmware_version,
                     device_identifier, enumeration_type):
         self.tfIDs.append([uid, device_identifier])
+
+    def reset_scheduler(self):
+        logging.info("************** RESETTING SCHEDULER **************")
+        for job in self.scheduler.get_jobs():
+            print("Removing job: ", job)
+            job.remove()
+
+    def __del__(self):
+        try:
+            logging.info("************** SHUTTING DOWN CONNECTIONS **************")
+            self.tfIpCon.disconnect()
+            self.scheduler.shutdown()
+            sleep(1)
+        except Exception as e:
+            print("COULD NOT KILL CONNECTIONS PROPERLY")
+            print("Why: ", e)
 

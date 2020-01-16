@@ -29,7 +29,7 @@ import pause # pylint: disable=import-error
 import time
 import signal
 from pysrt import open as srtopen # pylint: disable=import-error
-from pysrt import stream as srtstream
+from pysrt import stream as srtstream # pylint: disable=import-error
 from content_reader import content_in_dir
 import logging
 
@@ -82,8 +82,10 @@ killOmx()
 # utils
 
 def sigint_handler(signum, frame):
+    global connections
     """ Kill omx processes on a ctrl+c/program closure to mirror the behaviour of vlc and, in turn, to be more graceful. """
     killOmx()
+    connections.__del__()
     exit()
 
 signal.signal(signal.SIGINT, sigint_handler)
@@ -194,7 +196,6 @@ class GetTrackList(Resource):
                     MEDIA_BASE_PATH,
                     connections
                 )
-
             player.resetLighting()
 
             return jsonify(NEW_TRACK_ARRAY)
