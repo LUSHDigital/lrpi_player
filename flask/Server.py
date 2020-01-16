@@ -163,48 +163,44 @@ class GetTrackList(Resource):
         global BUILT_PATH
         global player
 
-        if useNTP:
-            c = ntplib.NTPClient()
-            try:
-                response = c.request(NTP_SERVER)
-                print('\n' + 30*'-')
-                print('ntp time: ', ctime(response.tx_time))
-                print(30*'-' + '\n')
-            except:
-                print('Could not get ntp time!')
-
-        # return a graceful error if the usb stick isn't mounted
-        if os.path.isdir(MEDIA_BASE_PATH) == False:
-            return jsonify(1)
+        try:
 
         if BUILT_PATH is None:
             BUILT_PATH = MEDIA_BASE_PATH
 
         args = getInput()
 
-        print("track list id: " +  str(args['id']))
+            # return a graceful error if the usb stick isn't mounted
+            if os.path.isdir(MEDIA_BASE_PATH) == False:
+                return jsonify(1)
+
+            if BUILT_PATH is None:
+                BUILT_PATH = MEDIA_BASE_PATH 
+            
+            args = getInput()
+
+            print("track list id: " +  str(args['id']))
 
 
-        if args['id']:
-            if NEW_TRACK_ARRAY:
-                BUILT_PATH += [x['Path'] for x in NEW_TRACK_ARRAY if x['ID'] == args['id']][0] + "/"
-                print(BUILT_PATH[0])
+            if args['id']:
+                if NEW_TRACK_ARRAY:
+                    BUILT_PATH += [x['Path'] for x in NEW_TRACK_ARRAY if x['ID'] == args['id']][0] + "/"
+                    print(BUILT_PATH[0])
 
 
-        print('BUILT_PATH: ' + str(BUILT_PATH))
+            print('BUILT_PATH: ' + str(BUILT_PATH))
 
 
-        TRACK_ARRAY_WITH_CONTENTS = content_in_dir(BUILT_PATH)
-        # print(TRACK_ARRAY_WITH_CONTENTS)
-        NEW_SRT_ARRAY = TRACK_ARRAY_WITH_CONTENTS
+            TRACK_ARRAY_WITH_CONTENTS = content_in_dir(BUILT_PATH)
+            # print(TRACK_ARRAY_WITH_CONTENTS)
+            NEW_SRT_ARRAY = TRACK_ARRAY_WITH_CONTENTS
 
-        if mpegOnly:
-            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mlp"))]
-        elif mlpOnly:
-            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mp4"))]
-        elif allFormats:
-            NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt"))]
-
+            if mpegOnly:
+                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mlp"))]
+            elif mlpOnly:
+                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt") and (splitext(x['Name'])[1].lower() != ".mp4"))]
+            elif allFormats:
+                NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt"))]
 
         NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[1].lower() == ".srt"]
         # print(NEW_TRACK_ARRAY)
@@ -218,7 +214,21 @@ class GetTrackList(Resource):
             player.lighting.resetHUE()
             player.lighting.resetDMX()
 
-        return jsonify(NEW_TRACK_ARRAY)
+            NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[1].lower() == ".srt"]
+
+            if player and player.lighting.dmx:
+                player.setPlaylist(NEW_TRACK_ARRAY)
+                player.resetLighting()
+            else:
+                player = LushRoomsPlayer(NEW_TRACK_ARRAY, MEDIA_BASE_PATH)
+                player.resetLighting()
+
+            return jsonify(NEW_TRACK_ARRAY)
+        except Exception as e:
+            logging.error("Path building has probably failed. Sending error code and cleaning up...")
+            logging.error(e)
+            BUILT_PATH = None
+            return 1, 500, {'content-type': 'application/json'}
 
 
 class PlaySingleTrack(Resource):
@@ -454,7 +464,6 @@ class ScentRoomTrigger(Resource):
                         player.exit()
                         player.__del__()
                         player = None
-
                     player.stop()
                     player.exit()
                     player.__del__()
@@ -470,7 +479,6 @@ class ScentRoomTrigger(Resource):
 
         else:
             return jsonify({'response': 500, 'description': 'not ok!', "error": "Incorrect body format"})
-
 # URLs are defined here
 
 api.add_resource(GetTrackList, '/get-track-list')

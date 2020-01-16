@@ -36,6 +36,9 @@ class OmxPlayer():
         print('seek event! ' + str(b))
         return
 
+    def primeForStart(self, pathToTrack):
+        self.triggerStart(pathToTrack, withPause=True)
+
     def triggerStart(self, pathToTrack, withPause=False):
         # lrpi_player#105
         # Audio output can be routed through hdmi or the jack,
@@ -68,10 +71,6 @@ class OmxPlayer():
             self.player.set_volume(0)
             sleep(0.5)
 
-
-    def primeForStart(self, pathToTrack):
-        self.triggerStart(pathToTrack, withPause=True)
-
     def start(self, pathToTrack, syncTimestamp=None, master=False):
         print("Playing on omx... :", master)
         print("\n")
@@ -103,8 +102,8 @@ class OmxPlayer():
             self.player.set_volume(float(self.audio_volume)/100.0)
 
             print('synctime in omxplayer: ', ctime(syncTimestamp))
-
-            # self.player.play()
+            if master:
+                self.player.play()
             return str(self.player.duration())
         except Exception as e:
             print("ERROR: Could not start player... but audio may still be playing!")
@@ -114,7 +113,7 @@ class OmxPlayer():
 
     # action 16 is emulated keypress for playPause
     def playPause(self, syncTimestamp=None):
-        print("Playpausing...")
+        print("Playpausing with syncTimeStamp: ", syncTimestamp)
         if syncTimestamp:
             pause.until(syncTimestamp)
         self.player.action(16)
