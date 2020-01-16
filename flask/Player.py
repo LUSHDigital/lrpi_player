@@ -30,7 +30,7 @@ else:
     from VlcPlayer import VlcPlayer
 
 class LushRoomsPlayer():
-    def __init__(self, playlist, basePath, scheduler, tfIPConnection):
+    def __init__(self, playlist, basePath, connections):
         if uname().machine == 'armv7l':
             # we're likely on a 'Pi
             self.playerType = "OMX"
@@ -42,8 +42,7 @@ class LushRoomsPlayer():
             self.playerType = "VLC"
             self.player = VlcPlayer()
 
-        self.scheduler = scheduler
-        self.lighting = LushRoomsLighting(scheduler, tfIPConnection)
+        self.lighting = LushRoomsLighting(connections)
         self.basePath = basePath
         self.started = False
         self.playlist = playlist

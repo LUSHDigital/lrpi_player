@@ -15,6 +15,7 @@ import os, sys
 import os.path
 os.environ["FLASK_ENV"] = "development"
 
+# From vendors
 from flask import Flask, request, send_from_directory, render_template
 from flask_cors import CORS, cross_origin
 from flask_restful import Resource, Api
@@ -29,15 +30,14 @@ import time
 import signal
 from pysrt import open as srtopen # pylint: disable=import-error
 from pysrt import stream as srtstream
-import logging
-from apscheduler.schedulers.background import BackgroundScheduler
-from tinkerforge.ip_connection import IPConnection # pylint: disable=import-error
-
-import settings
 from content_reader import content_in_dir
-from Lighting import LushRoomsLighting
+import logging
+
+# From LushRooms
+import settings
 from Player import LushRoomsPlayer
 from OmxPlayer import killOmx
+from Connections import Connections
 
 # Remove initial Flask messages and warning
 cli = sys.modules['flask.cli']
@@ -52,12 +52,6 @@ useNTP = False
 app = Flask(__name__,  static_folder='static')
 api = Api(app)
 
-scheduler = BackgroundScheduler({
-    'apscheduler.executors.processpool': {
-        'type': 'processpool',
-        'max_workers': '1'
-    }}, timezone="Europe/London")
-scheduler.start(paused=False)
 logging.getLogger('apscheduler').setLevel(logging.CRITICAL)
 
 SENTRY_URL = os.environ.get("SENTRY_URL")
@@ -65,7 +59,6 @@ SENTRY_URL = os.environ.get("SENTRY_URL")
 if SENTRY_URL is not None:
     from raven.contrib.flask import Sentry
     sentry = Sentry(app, dsn=SENTRY_URL)
-
 
 
 NTP_SERVER = 'ns1.luns.net.uk'
@@ -80,12 +73,6 @@ PORT = 4223
 
 NEW_TRACK_ARRAY = []
 NEW_SRT_ARRAY = []
-
-player = None
-tfipcon = IPConnection() # TinkerForge IP connection
-paused = True
-status = "Paused"
-idle_lighting_player = None
 
 CORS(app)
 # killOmx as soon as the server starts...
@@ -153,30 +140,22 @@ class GetSettings(Resource):
 
 
 class GetTrackList(Resource):
-    global player, scheduler, tfipcon
     def get(self):
 
-        print(GetTrackList)
-
+        global player, connections
         global NEW_TRACK_ARRAY
         global NEW_SRT_ARRAY
         global BUILT_PATH
-        global player
 
         try:
-
-        if BUILT_PATH is None:
-            BUILT_PATH = MEDIA_BASE_PATH
-
-        args = getInput()
 
             # return a graceful error if the usb stick isn't mounted
             if os.path.isdir(MEDIA_BASE_PATH) == False:
                 return jsonify(1)
 
             if BUILT_PATH is None:
-                BUILT_PATH = MEDIA_BASE_PATH 
-            
+                BUILT_PATH = MEDIA_BASE_PATH
+
             args = getInput()
 
             print("track list id: " +  str(args['id']))
@@ -202,26 +181,21 @@ class GetTrackList(Resource):
             elif allFormats:
                 NEW_TRACK_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if ((x['Name'] != JSON_LIST_FILE) and (splitext(x['Name'])[1].lower() != ".srt"))]
 
-        NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[1].lower() == ".srt"]
-        # print(NEW_TRACK_ARRAY)
-        # print(NEW_SRT_ARRAY)
-        if player:
-            player.setPlaylist(NEW_TRACK_ARRAY)
-            player.lighting.resetHUE()
-            player.lighting.resetDMX()
-        else:
-            player = LushRoomsPlayer(NEW_TRACK_ARRAY, MEDIA_BASE_PATH, scheduler, tfipcon)
-            player.lighting.resetHUE()
-            player.lighting.resetDMX()
 
             NEW_SRT_ARRAY = [x for x in TRACK_ARRAY_WITH_CONTENTS if splitext(x['Name'])[1].lower() == ".srt"]
 
             if player and player.lighting.dmx:
+                logging.info("LushRoomsPlayer already exists, setting playlist...")
                 player.setPlaylist(NEW_TRACK_ARRAY)
-                player.resetLighting()
             else:
-                player = LushRoomsPlayer(NEW_TRACK_ARRAY, MEDIA_BASE_PATH)
-                player.resetLighting()
+                logging.info("Initialising new LushRoomsPlayer...")
+                player = LushRoomsPlayer(
+                    NEW_TRACK_ARRAY,
+                    MEDIA_BASE_PATH,
+                    connections
+                )
+
+            player.resetLighting()
 
             return jsonify(NEW_TRACK_ARRAY)
         except Exception as e:
@@ -233,7 +207,7 @@ class GetTrackList(Resource):
 
 class PlaySingleTrack(Resource):
     def get(self):
-        global player, paused
+        global player, connections
         global BUILT_PATH
 
         args = getInput()
@@ -250,20 +224,18 @@ class PlaySingleTrack(Resource):
         print("Playing: " + pathToTrack)
 
         duration = player.start(pathToTrack, None, BUILT_PATH + srtFileName)
-        paused = False
 
         return jsonify(duration)
 
 class PlayPause(Resource):
     def get(self):
-        global player, paused
+        global player, connections
         duration = player.playPause()
-        paused = not paused
         return jsonify(duration)
 
 class FadeDown(Resource):
     def get(self):
-        global player, paused
+        global player, connections
         global BUILT_PATH
 
         args = getInput()
@@ -297,7 +269,7 @@ class FadeDown(Resource):
 
 class Seek(Resource):
     def get(self):
-        global player, paused
+        global player, connections
         global BUILT_PATH
 
         args = getInput()
@@ -322,7 +294,7 @@ class PlayerStatus(Resource):
 
 class Pair(Resource):
     def get(self):
-        global player
+        global player, connections
 
         args = getInput()
         print('Pair with: ', args["pairhostname"])
@@ -337,7 +309,7 @@ class Pair(Resource):
 
 class Unpair(Resource):
     def get(self):
-        global player
+        global player, connections
 
         try:
             unpairRes = player.unpairAsMaster()
@@ -349,7 +321,7 @@ class Unpair(Resource):
 
 class Enslave(Resource):
     def get(self):
-        global player, scheduler, tfipcon
+        global player, connections
 
         # If there is a player running, kill it
         # If there isnt, make one without a playlist
@@ -365,7 +337,7 @@ class Enslave(Resource):
             player.stop()
             player.exit()
         else:
-            player = LushRoomsPlayer(None, None, scheduler, tfipcon)
+            player = LushRoomsPlayer(None, None, connections)
 
         print('Enslaving, player stopped and exited')
         print('Enslaved by: ', request.environ.get('HTTP_X_REAL_IP', request.remote_addr) )
@@ -379,7 +351,7 @@ class Enslave(Resource):
 
 class Free(Resource):
     def get(self):
-        global player
+        global player, connections
 
         try:
             freeRes = player.free()
@@ -394,7 +366,7 @@ class Free(Resource):
 
 class Command(Resource):
     def post(self):
-        global player
+        global player, connections
         command = request.get_json(force=True)
 
         res = player.commandFromMaster(
@@ -407,7 +379,7 @@ class Command(Resource):
 
 class Stop(Resource):
     def get(self):
-        global player
+        global player, connections
         global BUILT_PATH
 
         BUILT_PATH = None
@@ -422,7 +394,7 @@ class Stop(Resource):
 
 class ScentRoomTrigger(Resource):
     def post(self):
-        global player, scheduler, tfipcon
+        global player, connections
         body = request.get_json(force=True)
 
         print("SR Trigger received:")
@@ -436,7 +408,7 @@ class ScentRoomTrigger(Resource):
                 print(mp3_filename, srt_filename)
                 if player == None:
                     print("SR Trigger play - restarting LushRoomsPlayer")
-                    player = LushRoomsPlayer(None, None, scheduler, tfipcon)
+                    player = LushRoomsPlayer(None, None, connections)
                     player.start(mp3_filename, None, srt_filename)
                     return jsonify({'response': 200, 'description': 'ok!'})
                 else:
@@ -469,8 +441,7 @@ class ScentRoomTrigger(Resource):
                     player.__del__()
                     player = None
 
-                    scheduler.print_jobs()
-                    status = "Paused"
+                    connections.scheduler.print_jobs()
 
                 return jsonify({'response': 200, 'description': 'ok!'})
 
@@ -479,7 +450,7 @@ class ScentRoomTrigger(Resource):
 
         else:
             return jsonify({'response': 500, 'description': 'not ok!', "error": "Incorrect body format"})
-# URLs are defined here
+# URLs are defined hereck
 
 api.add_resource(GetTrackList, '/get-track-list')
 api.add_resource(PlaySingleTrack, '/play-single-track')
@@ -501,7 +472,10 @@ api.add_resource(Command, '/command') # POST
 api.add_resource(ScentRoomTrigger, '/scentroom-trigger') # POST
 
 if __name__ == '__main__':
-    tfipcon.connect(HOST, PORT)
-    settings_json = settings.get_settings()
+    global player, connections
 
+    player = None
+    connections = Connections()
+
+    settings_json = settings.get_settings()
     app.run(use_reloader=False, debug=settings_json["debug"], port=os.environ.get("PORT", "80"), host='0.0.0.0')
