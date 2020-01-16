@@ -491,7 +491,6 @@ api.add_resource(Command, '/command') # POST
 
 # Scentroom specific endpoints
 api.add_resource(ScentRoomTrigger, '/scentroom-trigger') # POST
-api.add_resource(ScentRoomReboot, '/scentroom-reboot') # GET
 
 if __name__ == '__main__':
     tfipcon.connect(HOST, PORT)
