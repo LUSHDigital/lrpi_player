@@ -285,16 +285,10 @@ class LushRoomsPlayer():
     def sendSlaveCommand(self, command):
         if self.player.paired:
             print('sending command to slave: ', command)
-            # c = ntplib.NTPClient()
             try:
                 # tx_time is a unix timestamp
                 # this, among a few other things, means 'party mode'
                 # is only available on the 'Pi'/other unix like systems
-                # response = c.request(NTP_SERVER)
-                # print('\n' + 30*'-')
-                # print('ntp time: ', ctime(response.tx_time))
-                # print('ntp time raw: ', response.tx_time)
-                # print(30*'-' + '\n')
 
                 localTimestamp = calendar.timegm(datetime.datetime.now().timetuple())
 
@@ -328,13 +322,10 @@ class LushRoomsPlayer():
 
 
     def exit(self):
-        # self.player.exit()
         self.player.__del__()
-        # self.lighting.exit()
 
     # mysterious Python destructor...
 
     def __del__(self):
         self.player.__del__()
-        # self.lighting.__del__()
         print("LRPlayer died")

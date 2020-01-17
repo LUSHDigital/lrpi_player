@@ -18,20 +18,17 @@ from DmxInterpolator import DmxInterpolator
 
 # dev
 
-DEBUG = True
-VERBOSE = True
+DEBUG = False
+VERBOSE = False
 SEEK_EVENT_LOG = False
 LIGHTING_MSGS = True
 
 # lighting
 
 MAX_BRIGHTNESS = 200
-DMX_FRAME_DURATION=25
+DMX_FRAME_DURATION = 25
 HUE_IP_ADDRESS = ""
-# SLEEP_TIME = 0.1 # seconds
-# TRANSITION_TIME = 10 # milliseconds
 
-playerInstance = 0
 logging.basicConfig(level=logging.INFO)
 
 # utils
@@ -39,7 +36,6 @@ logging.basicConfig(level=logging.INFO)
 class LushRoomsLighting():
 
     def __init__(self, connections):
-        global playerInstance
         print('Lushroom Lighting init!')
         self.PLAY_HUE = True
         self.PLAY_DMX = True
@@ -74,12 +70,6 @@ class LushRoomsLighting():
 
         if self.PLAY_DMX: self.initDMX()
         if self.PLAY_HUE: self.initHUE()
-
-        playerInstance += 1
-        self.playerInstance = playerInstance
-
-    def emptyDMXFrame(self):
-        return zeros((512,), dtype=int)
 
     ############################### LIGHTING FUNCTION METHODS
 
@@ -163,23 +153,22 @@ class LushRoomsLighting():
         if self.PLAY_HUE:
             logging.info("Directly resetting HUE...")
             for l in self.bridge.lights:
-                # print(dir(l))
                 l.on = True
             # Print light names
             # Set brightness of each light to 100
             for l in self.bridge.lights:
-                if LIGHTING_MSGS:
+                if DEBUG:
                     print(l.name)
                 l.brightness = 50
-                ##l.colormode = 'ct'
-                #l.colortemp_k = 2700
-                #l.saturation = 0
                 bri = 50
                 sat = 100
                 hue = 0
                 colortemp = 450
                 cmd =  {'transitiontime' : int(self.TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue), 'ct' : colortemp}
                 self.bridge.set_light(l.light_id,cmd)
+
+    def emptyDMXFrame(self):
+        return zeros((512,), dtype=int)
 
     ############################### LOW LEVEL LIGHT METHODS
 
@@ -248,10 +237,6 @@ class LushRoomsLighting():
         if backwards and SEEK_EVENT_LOG:
             print("searching backwards!")
 
-        if DEBUG and VERBOSE:
-            pass
-            # print("Starting from subtitle", lo, from_t, to_t, len(subtitle))
-
         # Find where we are
         subLen = len(subtitle)
 
@@ -265,9 +250,7 @@ class LushRoomsLighting():
                     print("In subs, at:", previous_i, " found: ", subtitle[previous_i].text)
                 return subtitle[previous_i].text, previous_i
 
-            # if (from_t >= subtitle[i].start) & (fro   m_t  <= subtitle[i].end):
             if (subtitle[i].start >= from_t) & (to_t  >= subtitle[i].start):
-                # print(subtitle[i].start, from_t, to_t)
                 if not self.dmx_interpolator.isRunning():
                     self.dmx_interpolator.findNextEvent(i, subtitle)
                 return subtitle[i].text, i
@@ -283,13 +266,8 @@ class LushRoomsLighting():
         i = 0
         for j in range(1+len(lights)+1):
             for l in lights:
-                #print(dir(l))
-                #lname = "lamp   "+l.name+"   "
                 lname = str(l.name)
-                #print(lname)
-                #print("testing", str(j), lname.find(str(i)), len(hue), l.name.find(str(i)), l.light_id, l.name, l.bridge.ip, l.bridge.name, str(i+1))
                 if lname.find(str(j))>=0:
-                    #if str(i) in lname:
                     if LIGHTING_MSGS:
                         print(j, lname.find(str(j)), l.light_id, l.name, l.bridge.ip, l.bridge.name)
                     if len(hue_l)<=j:
@@ -307,18 +285,8 @@ class LushRoomsLighting():
         cmd =  {'transitiontime' : int(TRANSITION_TIME), 'on' : True, 'bri' : int(bri), 'sat' : int(sat), 'hue' : int(hue)}
 
         if LIGHTING_MSGS:
-            print(self.playerInstance, "Trigger HUE", lums, cmd)
+            print("Trigger HUE", lums, cmd)
         if self.PLAY_HUE:
-            #lights = bridge.lights
-            #for light in lights:
-            #   print(light.name)
-            #   if light.name.find(str(l)):
-            #       light.brightness = bri
-            #       light.hue = hue
-            #lights[l].brightness = bri
-            #lights[l].saturation = sat
-            #lights[l].hue = hue
-
             for hl in self.hue_list[lums]:
                 logging.info("Triggering HUE")
                 self.bridge.set_light(hl, cmd)
@@ -328,16 +296,13 @@ class LushRoomsLighting():
             print("Empty DMX event found! Turning all DMX channels off...")
             channels = self.emptyDMXFrame()
         else:
-            # channels = int(int(MAX_BRIGHTNESS)/255.0*(array(items.split(",")).astype(int)))
             channels = array(items.split(",")).astype(int)
-            # channels = array(map(lambda i: int(MAX_BRIGHTNESS)*i, channels))
 
-        if self.PLAY_DMX: 
+        if self.PLAY_DMX:
             logging.info("Writing DMX frame")
             self.dmx.write_frame(channels)
 
     def trigger_light(self, subs):
-        global MAX_BRIGHTNESS, playerInstance
         if DEBUG:
             print("perf_count: ", perf_counter(), subs)
 
@@ -351,23 +316,17 @@ class LushRoomsLighting():
                 if DEBUG:
                     print("sc[0:3]: ", scope[0:3], "it: ", items)
 
-                if self.playerInstance == playerInstance:
+                if scope[0:3] == "HUE":
+                    lums = int(scope[3:])
+                    if VERBOSE:
+                        print("Trigger HUE: ",lums)
+                    self.trigger_hue(items, lums)
 
-                    if scope[0:3] == "HUE":
-                        lums = int(scope[3:])
-                        if VERBOSE:
-                            print("Trigger HUE: ",lums)
-                        self.trigger_hue(items, lums)
+                if scope[0:3] == "DMX":
+                    if LIGHTING_MSGS:
+                        print("Trigger DMX :: ", items)
 
-                    if scope[0:3] == "DMX":
-                        print("DMX scope...")
-                        lums = int(scope[3:])
-                        if LIGHTING_MSGS:
-                            print(self.playerInstance, " :: Trigger DMX :: ", items)
-
-                        self.trigger_dmx(items)
-                else:
-                    print("PlayerInstance doesn't match, whatever the hell this is...")
+                    self.trigger_dmx(items)
             except:
                pass
         if LIGHTING_MSGS and DEBUG:
@@ -386,7 +345,7 @@ class LushRoomsLighting():
         self.dmx_interpolator.__init__()
         self.startTime = perf_counter()
         subs_length = len(self.subs)
-        if subs is not None and self.playerInstance == playerInstance:
+        if subs is not None:
             if LIGHTING_MSGS:
                 print("Lighting: Start!")
                 print('AudioPlayer: ', self.player)
@@ -403,11 +362,6 @@ class LushRoomsLighting():
                 self.connections.reset_scheduler()
                 logging.info("**************ADDING TICK TO SCHEDULER**************")
                 self.job = self.scheduler.add_job(self.tick, 'interval', seconds=self.TICK_TIME, misfire_grace_time=None, max_instances=1, coalesce=False)
-
-                # This could be the cause of the _very_ first event, after a cold boot, not triggering correctly:
-                # self.scheduler.start(paused=False)
-
-                # logging.getLogger('apscheduler').setLevel(logging.CRITICAL)
 
             if LIGHTING_MSGS:
                 print("-------------")
@@ -427,7 +381,6 @@ class LushRoomsLighting():
     def fadeDown(self, status):
 
         print("Lighting: fadeDown")
-        # self.scheduler.shutdown()
         self.last_played = 0
 
         if status=="Paused":

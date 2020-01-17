@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 
-# TODO:
+# Tip for trying newer versions of omxplayer:
 #
-# Clearing omxplayer temporary files sometimes solves the issue,
+# Clearing omxplayer temporary files sometimes solves issues,
 # sometimes it doesn't...
 # sudo rm -rf /tmp/omxplayerdbus*
-#
-# 103 -> whitelist is injected from settings.json into the logic that uses the bools below...
-# Remember to update docs/gdrive examples!
 
 
 from os.path import splitext
@@ -173,7 +170,6 @@ class GetTrackList(Resource):
 
 
             TRACK_ARRAY_WITH_CONTENTS = content_in_dir(BUILT_PATH)
-            # print(TRACK_ARRAY_WITH_CONTENTS)
             NEW_SRT_ARRAY = TRACK_ARRAY_WITH_CONTENTS
 
             if mpegOnly:
@@ -240,8 +236,6 @@ class FadeDown(Resource):
         global BUILT_PATH
 
         args = getInput()
-        print('argsid : ', args["id"])
-        # print('argsinterval: ', args["interval"])
         pathToTrack = None
         subs = None
         srtFileName = None
@@ -254,7 +248,6 @@ class FadeDown(Resource):
                     start_time = time.time()
                     print("Loading SRT file " + srtFileName + " - " + str(start_time))
                     subs = srtopen(BUILT_PATH + srtFileName)
-                    #subs = srtstream(BUILT_PATH + srtFileName)
                     end_time = time.time()
                     print("Finished loading SRT file " + srtFileName + " - " + str(end_time))
                     print("Total time elapsed: " + str(end_time - start_time))
@@ -275,8 +268,6 @@ class Seek(Resource):
 
         args = getInput()
         print('position to seek (%%): ', args["position"])
-        # print('argsinterval: ', args["interval"])
-
         response = player.seek(int(args["position"]))
         print('pos: ', response)
 
@@ -475,6 +466,7 @@ api.add_resource(ScentRoomTrigger, '/scentroom-trigger') # POST
 if __name__ == '__main__':
     global player, connections
 
+    # Initialise the player/connections singletons
     player = None
     connections = Connections()
 

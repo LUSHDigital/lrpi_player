@@ -52,10 +52,10 @@ class OmxPlayer():
         if output_route == 'hdmi':
             normalised_output_route = 'hdmi'
             omxArgs += ['-w', '--layout', '5.1']
-        elif output_route == 'jack': 
+        elif output_route == 'jack':
             normalised_output_route = 'local'
 
-        omxArgs += ['-o', normalised_output_route] 
+        omxArgs += ['-o', normalised_output_route]
 
         print('OUTPUT: ' + normalised_output_route)
         print('Full playing args: ' + str(omxArgs))
@@ -93,7 +93,6 @@ class OmxPlayer():
 
             self.player.positionEvent += self.posEvent
             self.player.seekEvent += self.seekEvent
-            # self.player.set_position(0)
 
             if volume is not None:
                 self.audio_volume = volume
