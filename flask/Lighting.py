@@ -41,8 +41,8 @@ class LushRoomsLighting():
         self.PLAY_DMX = True
         self.TICK_TIME = 0.1 # seconds
         self.MENU_DMX_VAL = os.environ.get("MENU_DMX_VAL", None)
-        self.MENU_DMX_CHANNELS = os.environ.get("NUM_DMX_CHANNELS", None)
-        self.POD_MODE = self.MENU_DMX_VAL != None and self.MENU_DMX_CHANNELS != None
+        self.NUM_DMX_CHANNELS = os.environ.get("NUM_DMX_CHANNELS", None)
+        self.POD_MODE = self.MENU_DMX_VAL != None and self.NUM_DMX_CHANNELS != None
         self.TRANSITION_TIME = 5 # milliseconds
         self.hue_list = [[]]
         self.player = None
@@ -136,18 +136,32 @@ class LushRoomsLighting():
     def resetDMX(self):
         try:
             logging.info("Directly resetting DMX...")
-            self.dmx.write_frame([ int(0.65*MAX_BRIGHTNESS),
-                                        int(0.40*MAX_BRIGHTNESS),
-                                        int(0.40*MAX_BRIGHTNESS),
-                                        int(0.40*MAX_BRIGHTNESS),
-                                        int(0.40*MAX_BRIGHTNESS),
-                                        int(0.40*MAX_BRIGHTNESS),
-                                        int(0.40*MAX_BRIGHTNESS),
-                                        int(0.40*MAX_BRIGHTNESS),
-                                        int(0.40*MAX_BRIGHTNESS),
-                                        0,0,0,int(0.40*MAX_BRIGHTNESS) ])
-        except:
+            if not self.POD_MODE:
+                logging.info("Resetting in SPA mode...")
+                self.dmx.write_frame([ int(0.65*MAX_BRIGHTNESS),
+                                            int(0.40*MAX_BRIGHTNESS),
+                                            int(0.40*MAX_BRIGHTNESS),
+                                            int(0.40*MAX_BRIGHTNESS),
+                                            int(0.40*MAX_BRIGHTNESS),
+                                            int(0.40*MAX_BRIGHTNESS),
+                                            int(0.40*MAX_BRIGHTNESS),
+                                            int(0.40*MAX_BRIGHTNESS),
+                                            int(0.40*MAX_BRIGHTNESS),
+                                            0,0,0,int(0.40*MAX_BRIGHTNESS) ])
+            elif self.POD_MODE:
+                logging.info("Resetting in POD mode...")
+                print('pod mode reset RGD menu values: ', self.MENU_DMX_VAL)
+                print('pod mode number of DMX channels: ', self.NUM_DMX_CHANNELS)
+                frame_arr = []
+                menu_val_arr = self.MENU_DMX_VAL.split(",")
+                menu_val_arr = [int(i) for i in menu_val_arr]
+                for i in range(int(int(self.NUM_DMX_CHANNELS)/3)):
+                    frame_arr += menu_val_arr
+                self.dmx.write_frame(frame_arr)
+
+        except Exception as e:
             logging.error("Could not connect to DMX daemon to reset!")
+            logging.error(e)
 
     def resetHUE(self):
         if self.PLAY_HUE:
