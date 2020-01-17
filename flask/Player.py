@@ -136,6 +136,9 @@ class LushRoomsPlayer():
                 print('Master, sending stop!')
                 syncTime = self.sendSlaveCommand('stop')
 
+            if self.isSlave():
+                self.resetLighting()
+
             self.lighting.exit()
             self.player.exit(syncTime)
 
@@ -262,8 +265,6 @@ class LushRoomsPlayer():
                 self.playPause(startTime)
 
             if command == "stop":
-                # Reset lighting first if we're a slave, self.stop destroys the lighting...
-                self.resetLighting()
                 self.stop(startTime)
 
             if command == "fadeDown":
