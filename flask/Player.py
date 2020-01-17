@@ -174,7 +174,6 @@ class LushRoomsPlayer():
             while self.player.volumeDown(interval):
                 sleep(1.0/interval)
         self.player.exit()
-        # self.lighting.exit()
 
         if not self.isSlave():
             return self.start(path, subs, subsPath)
@@ -263,6 +262,8 @@ class LushRoomsPlayer():
                 self.playPause(startTime)
 
             if command == "stop":
+                # Reset lighting first if we're a slave, self.stop destroys the lighting...
+                self.resetLighting()
                 self.stop(startTime)
 
             if command == "fadeDown":
