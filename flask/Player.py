@@ -137,6 +137,7 @@ class LushRoomsPlayer():
                 syncTime = self.sendSlaveCommand('stop')
 
             if self.isSlave():
+                print('As slave, resetting lighting...')
                 self.resetLighting()
 
             self.lighting.exit()

@@ -41,6 +41,7 @@ class Connections():
         for job in self.scheduler.get_jobs():
             print("Removing job: ", job)
             job.remove()
+        self.scheduler.start(paused=False)
 
     def __del__(self):
         try:
