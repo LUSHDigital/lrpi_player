@@ -185,13 +185,7 @@ class OmxPlayer():
     def exit(self, syncTimestamp=None):
         if syncTimestamp:
             pause.until(syncTimestamp)
-
-        if self.player:
-            self.player.quit()
-            self.__del__()
-            killOmx()
-        else:
-            return 1
+        self.__del__()
 
     def __del__(self):
         if self.player:

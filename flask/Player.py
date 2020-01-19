@@ -136,12 +136,8 @@ class LushRoomsPlayer():
                 print('Master, sending stop!')
                 syncTime = self.sendSlaveCommand('stop')
 
-            if self.isSlave():
-                print('As slave, resetting lighting...')
-                self.resetLighting()
-
-            self.lighting.exit()
             self.player.exit(syncTime)
+            self.lighting.exit()
 
             return 0
         except Exception as e:
@@ -240,6 +236,7 @@ class LushRoomsPlayer():
     def free(self):
         if self.player.paired:
             self.player.setPaired(False, None)
+            self.resetLighting()
             self.player.exit()
             return 0
 

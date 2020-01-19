@@ -192,7 +192,7 @@ class GetTrackList(Resource):
                     MEDIA_BASE_PATH,
                     connections
                 )
-            player.resetLighting()
+                player.resetLighting()
 
             return jsonify(NEW_TRACK_ARRAY)
         except Exception as e:

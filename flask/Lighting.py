@@ -444,9 +444,10 @@ class LushRoomsLighting():
 
     def __del__(self):
         try:
-            print("ipcon: ", self.ipcon)
+            print("before Lighting obj reset :: ipcon: ", self.ipcon)
             self.connections.reset_scheduler()
-            self.dmx = None
+            self.resetDMX()
+            self.resetHUE()
         except Exception as e:
             print('Lighting destructor failed: ', e)
         if LIGHTING_MSGS:

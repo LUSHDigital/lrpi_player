@@ -46,8 +46,10 @@ class Connections():
     def __del__(self):
         try:
             logging.info("************** SHUTTING DOWN CONNECTIONS **************")
-            self.tfIpCon.disconnect()
+            logging.info("Shutting down scheduler...")
             self.scheduler.shutdown()
+            logging.info("Disconnecting from Tinkerforge master brick...")
+            self.tfIpCon.disconnect()
             sleep(1)
         except Exception as e:
             print("COULD NOT KILL CONNECTIONS PROPERLY")
