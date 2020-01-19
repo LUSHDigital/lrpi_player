@@ -92,10 +92,6 @@ class LushRoomsLighting():
                             self.dmx = BrickletDMX(tf[0], self.ipcon)
                             self.dmx.set_dmx_mode(self.dmx.DMX_MODE_MASTER)
                             self.dmx.set_frame_duration(DMX_FRAME_DURATION)
-<<<<<<< HEAD
-
-=======
->>>>>>> 03ae362bd05c5b90d8b2cc796d1668313349c264
                         dmxcount += 1
 
             if dmxcount < 1:
