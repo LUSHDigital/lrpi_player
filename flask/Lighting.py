@@ -208,7 +208,7 @@ class LushRoomsLighting():
         # convert time in seconds to subtitle time
         pt = SubRipTime(seconds=pp)
         # convert time in seconds to subtitle time + the tick time increment
-        ptd = SubRipTime(seconds=(pp+1*TICK_TIME))
+        ptd = SubRipTime(seconds=(pp+1*self.TICK_TIME))
 
         sub, i = self.find_subtitle(self.subs, pt, ptd, lo=self.last_played)
 
