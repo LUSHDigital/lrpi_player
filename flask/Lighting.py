@@ -92,7 +92,10 @@ class LushRoomsLighting():
                             self.dmx = BrickletDMX(tf[0], self.ipcon)
                             self.dmx.set_dmx_mode(self.dmx.DMX_MODE_MASTER)
                             self.dmx.set_frame_duration(DMX_FRAME_DURATION)
+<<<<<<< HEAD
 
+=======
+>>>>>>> 03ae362bd05c5b90d8b2cc796d1668313349c264
                         dmxcount += 1
 
             if dmxcount < 1:
@@ -210,14 +213,6 @@ class LushRoomsLighting():
             print("Could not get the current position of the player, shutting down lighting gracefully...")
             logging.error(e)
             self.connections.reset_scheduler()
-
-        pt = SubRipTime(seconds=pp)
-        ptd = SubRipTime(seconds=(pp+1*self.TICK_TIME))
-
-        if DEBUG:
-            #print('Time: %s | %s | %s - %s | %s - %s | %s | %s' % (datetime.now(),t,ts,tsd,pt,ptd,pp,ptms))
-            # print('Time: %s | %s | %s | %s | %s | %s | %s ' % (datetime.now(),t,ts,tsd,pp,pt,ptd))
-            pass
 
         sub, i = self.find_subtitle(self.subs, pt, ptd, lo=self.last_played)
 
