@@ -18,8 +18,8 @@ from DmxInterpolator import DmxInterpolator
 
 # dev
 
-DEBUG = True
-VERBOSE = True
+DEBUG = False
+VERBOSE = False
 SEEK_EVENT_LOG = False
 LIGHTING_MSGS = True
 
