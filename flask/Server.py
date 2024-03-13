@@ -505,6 +505,18 @@ class ScentRoomIdle(Resource):
             return jsonify({'response': 500, 'description': 'not ok!'})
 
 
+class Reboot(Resource):
+    def get(self):
+        logging.warning(
+            "Reboot has been called! There will be no response from this call!"
+        )
+        try:
+            os.system("echo b > /sysrq")
+        except Exception as e:
+            return jsonify(
+                {"response": 500, "error": "Something went wrong with reboot"}
+            )
+
 # URLs / routes defined here
 
 api.add_resource(GetTrackList, '/get-track-list')
@@ -526,6 +538,10 @@ api.add_resource(Command, '/command')  # POST
 # Scentroom specific endpoints
 api.add_resource(ScentRoomTrigger, '/scentroom-trigger')  # POST
 api.add_resource(ScentRoomIdle, '/scentroom-idle')  # GET
+
+# Admin endpoint
+
+api.add_resource(Reboot, '/reboot')  # GET
 
 
 def appFactory():
